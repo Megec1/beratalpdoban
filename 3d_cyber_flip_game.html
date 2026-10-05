@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Flip & Wheel Championship 3D</title>
+  
+  <!-- Tailwind CSS & FontAwesome Icons & Canvas Confetti -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              bg: '#080811',
+              card: '#121326',
+              neonBlue: '#00f0ff',
+              neonPink: '#ff007f',
+              neonYellow: '#ffe600',
+              neonPurple: '#8b00ff'
+            }
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 25px rgba(0, 240, 255, 0.5)',
+            'glow-pink': '0 0 25px rgba(255, 0, 127, 0.5)',
+            'glow-purple': '0 0 25px rgba(139, 0, 255, 0.5)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: #05050c;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(139, 0, 255, 0.2) 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 15% 80%, rgba(255, 0, 127, 0.12) 0%, transparent 50%);
+    }
+
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    /* 3D Coin Flip CSS */
+    .coin-container {
+      perspective: 1200px;
+    }
+
+    .coin {
+      width: 230px;
+      height: 230px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+      cursor: pointer;
+    }
+
+    @media (min-width: 640px) {
+      .coin {
+        width: 290px;
+        height: 290px;
+      }
+    }
+
+    .coin-side {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 8px solid #181938;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 30px rgba(0, 240, 255, 0.4);
+    }
+
+    .coin-front {
+      transform: rotateY(0deg);
+      border-color: #00f0ff;
+    }
+
+    .coin-back {
+      transform: rotateY(180deg);
+      border-color: #ff007f;
+    }
+
+    .coin img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Glassmorphism Styling */
+    .glass-card {
+      background: rgba(18, 19, 38, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Neon Gradient Button */
+    .btn-neon {
+      position: relative;
+      background: linear-gradient(135deg, #00f0ff 0%, #8b00ff 50%, #ff007f 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 4s ease infinite;
+      transition: all 0.3s ease;
+    }
+
+    .btn-neon:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.7), 0 0 15px rgba(255, 0, 127, 0.5);
+    }
+
+    .btn-neon:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Background Grid Lines */
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+
+    /* Custom Scrollbar */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen bg-grid flex flex-col justify-between overflow-x-hidden">
+
+  <header class="w-full p-4 sm:p-5 border-b border-gray-800/80 glass-card sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-purple-600 to-pink-500 flex items-center justify-center text-xl font-bold shadow-glow-cyan">
+          <i class="fa-solid fa-arrows-spin text-yellow-300 animate-spin" style="animation-duration: 10s;"></i>
+        </div>
+        <div>
+          <h1 class="font-orbitron font-black text-lg sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-amber-300">
+            CYBER FLIP 3D
+          </h1>
+          <p class="text-[11px] text-gray-400 font-semibold" data-tr="Şans & Çevirme Şampiyonası" data-en="Chance & Spin Championship">
+            Şans & Çevirme Şampiyonası
+          </p>
+        </div>
+      </div>
+
+      <!-- Controls: Game Mode, Language, Sound, BGM, Reset -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Mode Switch -->
+        <div class="bg-black/40 p-1 rounded-xl border border-gray-800 flex text-xs font-orbitron">
+          <button id="btnCoinMode" onclick="setGameGameMode('coin')" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/60 text-cyan-300 font-bold transition">
+            <i class="fa-solid fa-coins mr-1"></i> COIN
+          </button>
+          <button id="btnWheelMode" onclick="setGameGameMode('wheel')" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition">
+            <i class="fa-solid fa-chart-pie mr-1"></i> WHEEL
+          </button>
+        </div>
+
+        <!-- Language Switcher -->
+        <button onclick="toggleLanguage()" class="px-3 py-1.5 rounded-xl glass-card hover:bg-white/10 transition text-xs font-orbitron font-bold border border-cyan-500/30 text-cyan-300">
+          <i class="fa-solid fa-globe mr-1"></i> <span id="langText">TR</span>
+        </button>
+
+        <!-- SFX Toggle -->
+        <button id="soundToggle" onclick="toggleSound()" class="px-3 py-1.5 rounded-xl glass-card hover:bg-white/10 transition text-xs font-semibold border border-cyan-500/30 text-gray-200" title="Ses">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+        </button>
+
+        <!-- BGM Synth Music Toggle -->
+        <button id="bgmToggle" onclick="toggleBGM()" class="px-3 py-1.5 rounded-xl glass-card hover:bg-white/10 transition text-xs font-semibold border border-purple-500/30 text-gray-400" title="Müzik">
+          <i id="bgmIcon" class="fa-solid fa-music"></i>
+        </button>
+
+        <!-- Reset Button -->
+        <button onclick="resetStats()" class="px-3 py-1.5 rounded-xl glass-card hover:bg-rose-500/20 hover:border-rose-500/50 transition text-xs text-gray-300 border border-gray-700" title="Sıfırla">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 my-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- LEFT PANEL: Image Customization & Stats -->
+    <div class="lg:col-span-3 space-y-4">
+      
+      <!-- Custom Image Uploader Box -->
+      <div class="glass-card p-4 rounded-2xl border border-cyan-500/20">
+        <h2 class="font-orbitron text-xs font-bold text-cyan-400 tracking-wider mb-3 flex items-center gap-2" data-tr="GÖRSEL AYARLARI" data-en="IMAGE SETTINGS">
+          <i class="fa-solid fa-images"></i> GÖRSEL AYARLARI
+        </h2>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Image 1 Loader -->
+          <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-gray-800">
+            <div class="flex items-center gap-2">
+              <img id="previewImg1" class="w-8 h-8 rounded-full object-cover border border-cyan-400" src="" alt="Görsel 1">
+              <span class="font-bold text-gray-200" data-tr="1. Görsel" data-en="Image 1">1. Görsel</span>
+            </div>
+            <label class="cursor-pointer bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border border-cyan-500/50 px-2.5 py-1 rounded-lg font-semibold transition text-[11px]">
+              <i class="fa-solid fa-upload mr-1"></i> <span data-tr="Yükle" data-en="Upload">Yükle</span>
+              <input type="file" id="uploadImg1" accept="image/*" class="hidden" onchange="handleImageUpload(event, 1)">
+            </label>
+          </div>
+
+          <!-- Image 2 Loader -->
+          <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-gray-800">
+            <div class="flex items-center gap-2">
+              <img id="previewImg2" class="w-8 h-8 rounded-full object-cover border border-fuchsia-400" src="" alt="Görsel 2">
+              <span class="font-bold text-gray-200" data-tr="2. Görsel" data-en="Image 2">2. Görsel</span>
+            </div>
+            <label class="cursor-pointer bg-fuchsia-500/20 hover:bg-fuchsia-500/40 text-fuchsia-300 border border-fuchsia-500/50 px-2.5 py-1 rounded-lg font-semibold transition text-[11px]">
+              <i class="fa-solid fa-upload mr-1"></i> <span data-tr="Yükle" data-en="Upload">Yükle</span>
+              <input type="file" id="uploadImg2" accept="image/*" class="hidden" onchange="handleImageUpload(event, 2)">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Dashboard -->
+      <div class="glass-card p-4 rounded-2xl border border-purple-500/20">
+        <h2 class="font-orbitron text-xs font-bold text-purple-400 tracking-wider mb-3 flex items-center gap-2" data-tr="İSTATİSTİKLER" data-en="STATISTICS">
+          <i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER
+        </h2>
+        
+        <div class="space-y-3.5">
+          <div>
+            <div class="flex justify-between text-xs mb-1 text-gray-300">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> <span data-tr="1. Görsel" data-en="Image 1">1. Görsel</span></span>
+              <span id="statImg1Pct" class="font-bold text-cyan-400">50%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div id="statImg1Bar" class="h-full bg-cyan-400 transition-all duration-500" style="width: 50%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1 text-gray-300">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-fuchsia-500"></span> <span data-tr="2. Görsel" data-en="Image 2">2. Görsel</span></span>
+              <span id="statImg2Pct" class="font-bold text-fuchsia-400">50%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div id="statImg2Bar" class="h-full bg-fuchsia-500 transition-all duration-500" style="width: 50%"></div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-gray-800/80 grid grid-cols-2 gap-2 text-center">
+            <div class="bg-black/40 p-2 rounded-xl border border-gray-800">
+              <div class="text-[10px] text-gray-400 font-bold" data-tr="TOPLAM" data-en="TOTAL">TOPLAM</div>
+              <div id="totalFlips" class="font-orbitron text-lg font-black text-white">0</div>
+            </div>
+            <div class="bg-black/40 p-2 rounded-xl border border-gray-800">
+              <div class="text-[10px] text-gray-400 font-bold" data-tr="SERİ" data-en="STREAK">SERİ</div>
+              <div id="currentStreak" class="font-orbitron text-lg font-black text-amber-400">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speed Control -->
+      <div class="glass-card p-3.5 rounded-2xl border border-gray-800">
+        <label class="text-[11px] text-gray-400 font-bold block mb-2 font-orbitron" data-tr="DÖNDÜRME HIZI" data-en="SPIN SPEED">DÖNDÜRME HIZI</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="modeNormal" onclick="setSpeedMode('normal')" class="py-1.5 text-xs rounded-xl border border-cyan-400/50 bg-cyan-500/20 font-semibold text-cyan-300 transition">
+            <i class="fa-solid fa-gauge"></i> <span data-tr="Normal" data-en="Normal">Normal</span>
+          </button>
+          <button id="modeSuper" onclick="setSpeedMode('super')" class="py-1.5 text-xs rounded-xl border border-gray-700 bg-black/20 text-gray-400 font-semibold transition hover:border-fuchsia-500/50">
+            <i class="fa-solid fa-bolt-lightning"></i> <span data-tr="Süper Hızlı" data-en="Super Fast">Süper Hızlı</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: Game Area (3D Coin or Wheel) -->
+    <div class="lg:col-span-6 flex flex-col items-center justify-center space-y-6 my-auto">
+      
+      <!-- Result Winner Banner -->
+      <div id="resultCard" class="opacity-0 transition-all duration-500 transform scale-90 text-center px-6 py-3 rounded-2xl glass-card border border-cyan-400/50 shadow-glow-cyan min-w-[280px]">
+        <span id="resultText" class="font-orbitron text-lg sm:text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-amber-300 to-fuchsia-400">
+          HAZIR!
+        </span>
+      </div>
+
+      <!-- GAME CONTAINER 1: 3D Coin Flip -->
+      <div id="coinView" class="coin-container my-2">
+        <div id="coin" class="coin" onclick="spinCoin()">
+          <!-- Side A: Image 1 -->
+          <div class="coin-side coin-front">
+            <img id="coinImg1" src="aras.png" alt="Side 1">
+          </div>
+          <!-- Side B: Image 2 -->
+          <div class="coin-side coin-back">
+            <img id="coinImg2" src="renq.jpg" alt="Side 2">
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME CONTAINER 2: Neon Canvas Spin Wheel (Hidden by default) -->
+      <div id="wheelView" class="hidden relative my-2 flex items-center justify-center">
+        <!-- Wheel Arrow Pointer -->
+        <div class="absolute -top-4 z-20 text-amber-400 text-3xl filter drop-shadow-[0_0_10px_rgba(255,230,0,0.8)]">
+          <i class="fa-solid fa-location-pin fa-rotate-180"></i>
+        </div>
+        <canvas id="wheelCanvas" width="300" height="300" class="rounded-full border-4 border-purple-500/60 shadow-glow-purple cursor-pointer" onclick="spinWheel()"></canvas>
+      </div>
+
+      <!-- Action Spin Button -->
+      <div class="w-full max-w-xs">
+        <button id="spinBtn" onclick="triggerSpinAction()" class="btn-neon w-full py-4 rounded-2xl font-orbitron font-black text-xl text-white tracking-widest shadow-2xl flex items-center justify-center gap-3">
+          <i class="fa-solid fa-play text-amber-300 text-2xl"></i>
+          <span id="spinBtnText" data-tr="ÇEVİR / DÖNDÜR" data-en="SPIN / FLIP">ÇEVİR / DÖNDÜR</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: History Log -->
+    <div class="lg:col-span-3">
+      <div class="glass-card p-4 rounded-2xl border border-fuchsia-500/20 h-full flex flex-col">
+        <h2 class="font-orbitron text-xs font-bold text-fuchsia-400 tracking-wider mb-3 flex items-center gap-2" data-tr="GEÇMİŞ SONUÇLAR" data-en="RECENT HISTORY">
+          <i class="fa-solid fa-clock-rotate-left"></i> GEÇMİŞ SONUÇLAR
+        </h2>
+
+        <div id="historyList" class="space-y-2 max-h-72 lg:max-h-96 overflow-y-auto pr-1 custom-scroll">
+          <div id="emptyHistory" class="text-xs text-gray-500 text-center py-10 italic" data-tr="Henüz çevirme yapılmadı.<br>Butona bas ve şansını dene!" data-en="No spins yet.<br>Click the button and try your luck!">
+            Henüz çevirme yapılmadı.<br>Butona bas ve şansını dene!
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full p-4 border-t border-gray-800/60 text-center text-xs text-gray-500">
+    <p>© 2026 Cyber Flip Championship • Web Audio Synthesizer & Canvas 3D Engine</p>
+  </footer>
+
+  <script>
+    /* Default Image Sources with Canvas Fallbacks */
+    let imgData1 = "aras.png";
+    let imgData2 = "renq.jpg";
+
+    // Dynamic Language Dictionary
+    let currentLang = 'TR';
+    const translations = {
+      TR: {
+        ready: "HAZIR!",
+        win1: "1. GÖRSEL KAZANDI!",
+        win2: "2. GÖRSEL KAZANDI!",
+        spinBtn: "ÇEVİR / DÖNDÜR",
+        emptyHist: "Henüz çevirme yapılmadı.<br>Butona bas ve şansını dene!",
+        img1Label: "1. Görsel",
+        img2Label: "2. Görsel"
+      },
+      EN: {
+        ready: "READY!",
+        win1: "IMAGE 1 WON!",
+        win2: "IMAGE 2 WON!",
+        spinBtn: "SPIN / FLIP",
+        emptyHist: "No spins yet.<br>Click the button and try your luck!",
+        img1Label: "Image 1",
+        img2Label: "Image 2"
+      }
+    };
+
+    /* Web Audio API Sound Synthesizer (Zero External Dependencies) */
+    class AudioSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.bgmMuted = true;
+        this.bgmOsc = null;
+        this.bgmTimer = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Flip Tick Sound
+      playTick() {
+        if (this.muted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(350 + Math.random() * 250, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.04);
+      }
+
+      // Spin Start Sound
+      playSpinStart() {
+        if (this.muted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(550, this.ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.28);
+      }
+
+      // Victory Fanfare Audio
+      playWin() {
+        if (this.muted) return;
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.08);
+          osc.stop(this.ctx.currentTime + idx * 0.08 + 0.3);
+        });
+      }
+
+      // Ambient Synth Background Loop
+      toggleBGM() {
+        this.bgmMuted = !this.bgmMuted;
+        if (this.bgmMuted) {
+          if (this.bgmTimer) clearInterval(this.bgmTimer);
+          return false;
+        } else {
+          this.init();
+          const bgmNotes = [130.81, 164.81, 196.00, 220.00]; // Arpeggio C3, E3, G3, A3
+          let idx = 0;
+          this.bgmTimer = setInterval(() => {
+            if (this.bgmMuted) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(bgmNotes[idx % bgmNotes.length], this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.4);
+            idx++;
+          }, 400);
+          return true;
+        }
+      }
+    }
+
+    const soundSynth = new AudioSynthesizer();
+
+    // Game State Variables
+    let gameMode = 'coin'; // 'coin' or 'wheel'
+    let isSpinning = false;
+    let currentCoinRotation = 0;
+    let currentWheelAngle = 0;
+    let speedMode = 'normal';
+    
+    let gameStats = {
+      img1Count: 0,
+      img2Count: 0,
+      total: 0,
+      streak: 0,
+      lastWinner: null
+    };
+
+    // Images Loaded Objects
+    const loadedImg1 = new Image();
+    const loadedImg2 = new Image();
+
+    window.onload = function() {
+      // Set initial image sources & fallbacks
+      setupImages();
+      drawWheel();
+    };
+
+    function setupImages() {
+      const img1El = document.getElementById('coinImg1');
+      const img2El = document.getElementById('coinImg2');
+      const prev1 = document.getElementById('previewImg1');
+      const prev2 = document.getElementById('previewImg2');
+
+      // Create procedural canvas fallbacks in case image links break
+      const fallback1 = createProceduralImage('ARAS', '#00f0ff', '#080818');
+      const fallback2 = createProceduralImage('RENQ', '#ff007f', '#080818');
+
+      img1El.src = imgData1;
+      img1El.onerror = () => { img1El.src = fallback1; prev1.src = fallback1; loadedImg1.src = fallback1; };
+      prev1.src = imgData1;
+      prev1.onerror = () => { prev1.src = fallback1; };
+      loadedImg1.src = imgData1;
+      loadedImg1.onerror = () => { loadedImg1.src = fallback1; };
+
+      img2El.src = imgData2;
+      img2El.onerror = () => { img2El.src = fallback2; prev2.src = fallback2; loadedImg2.src = fallback2; };
+      prev2.src = imgData2;
+      prev2.onerror = () => { prev2.src = fallback2; };
+      loadedImg2.src = imgData2;
+      loadedImg2.onerror = () => { loadedImg2.src = fallback2; };
+
+      loadedImg1.onload = () => drawWheel();
+      loadedImg2.onload = () => drawWheel();
+    }
+
+    function createProceduralImage(text, color, bg) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 300;
+      cvs.height = 300;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, 300, 300);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(10, 10, 280, 280);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 28px Orbitron, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 150, 150);
+      return cvs.toDataURL();
+    }
+
+    // Handle Custom Image File Upload
+    function handleImageUpload(e, imgIndex) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const result = evt.target.result;
+        if (imgIndex === 1) {
+          imgData1 = result;
+          document.getElementById('coinImg1').src = result;
+          document.getElementById('previewImg1').src = result;
+          loadedImg1.src = result;
+        } else {
+          imgData2 = result;
+          document.getElementById('coinImg2').src = result;
+          document.getElementById('previewImg2').src = result;
+          loadedImg2.src = result;
+        }
+        setTimeout(() => drawWheel(), 200);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* Game Mode Switcher (Coin vs Wheel) */
+    function setGameGameMode(mode) {
+      if (isSpinning) return;
+      gameMode = mode;
+      const btnCoin = document.getElementById('btnCoinMode');
+      const btnWheel = document.getElementById('btnWheelMode');
+      const coinView = document.getElementById('coinView');
+      const wheelView = document.getElementById('wheelView');
+
+      if (mode === 'coin') {
+        btnCoin.className = 'px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/60 text-cyan-300 font-bold transition';
+        btnWheel.className = 'px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition';
+        coinView.classList.remove('hidden');
+        wheelView.classList.add('hidden');
+      } else {
+        btnWheel.className = 'px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-400/60 text-purple-300 font-bold transition';
+        btnCoin.className = 'px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition';
+        wheelView.classList.remove('hidden');
+        coinView.classList.add('hidden');
+        drawWheel();
+      }
+    }
+
+    /* Draw Neon Canvas Wheel */
+    function drawWheel(angle = 0) {
+      const canvas = document.getElementById('wheelCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const radius = width / 2;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate((angle * Math.PI) / 180);
+
+      // Half 1: Image 1 Slice (Cyan Theme)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2);
+      ctx.fillStyle = '#082f49';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#00f0ff';
+      ctx.stroke();
+
+      // Half 2: Image 2 Slice (Pink Theme)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, Math.PI / 2, (3 * Math.PI) / 2);
+      ctx.fillStyle = '#4c0519';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#ff007f';
+      ctx.stroke();
+
+      // Draw Thumbnails inside Wheel
+      try {
+        if (loadedImg1.complete) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(60, 0, 35, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(loadedImg1, 25, -35, 70, 70);
+          ctx.restore();
+        }
+        if (loadedImg2.complete) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(-60, 0, 35, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(loadedImg2, -95, -35, 70, 70);
+          ctx.restore();
+        }
+      } catch (e) {}
+
+      ctx.restore();
+
+      // Center Knob
+      ctx.beginPath();
+      ctx.arc(radius, radius, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#121326';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ffe600';
+      ctx.stroke();
+    }
+
+    function triggerSpinAction() {
+      if (gameMode === 'coin') {
+        spinCoin();
+      } else {
+        spinWheel();
+      }
+    }
+
+    /* Spin 3D Coin Handler */
+    function spinCoin() {
+      if (isSpinning) return;
+      isSpinning = true;
+
+      soundSynth.playSpinStart();
+      setButtonDisabled(true);
+
+      const resultCard = document.getElementById('resultCard');
+      resultCard.classList.add('opacity-0', 'scale-90');
+
+      const outcome = Math.random() < 0.5 ? 0 : 1;
+      const fullRotations = speedMode === 'super' ? 6 : 12;
+      const targetSideAngle = outcome === 0 ? 0 : 180;
+
+      const currentMod = currentCoinRotation % 360;
+      let extraAngle = (360 - currentMod) + (fullRotations * 360) + targetSideAngle;
+      const finalRotation = currentCoinRotation + extraAngle;
+
+      const duration = speedMode === 'super' ? 1400 : 3000;
+      const startTime = performance.now();
+      let lastTickAngle = currentCoinRotation;
+
+      function animateCoin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentAngle = currentCoinRotation + (extraAngle * easeOut);
+
+        document.getElementById('coin').style.transform = `rotateY(${currentAngle}deg)`;
+
+        if (Math.abs(currentAngle - lastTickAngle) >= 180) {
+          soundSynth.playTick();
+          lastTickAngle = currentAngle;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateCoin);
+        } else {
+          currentCoinRotation = finalRotation;
+          onSpinComplete(outcome);
+        }
+      }
+
+      requestAnimationFrame(animateCoin);
+    }
+
+    /* Spin Wheel Handler */
+    function spinWheel() {
+      if (isSpinning) return;
+      isSpinning = true;
+
+      soundSynth.playSpinStart();
+      setButtonDisabled(true);
+
+      const resultCard = document.getElementById('resultCard');
+      resultCard.classList.add('opacity-0', 'scale-90');
+
+      const outcome = Math.random() < 0.5 ? 0 : 1;
+      // Wheel top pointer points to outcome: 0 -> Right slice, 1 -> Left slice
+      const baseAngle = outcome === 0 ? 270 : 90;
+      const fullRotations = speedMode === 'super' ? 5 : 10;
+      
+      const targetAngle = (fullRotations * 360) + baseAngle + (Math.random() * 40 - 20);
+      const duration = speedMode === 'super' ? 1600 : 3400;
+      const startTime = performance.now();
+      let lastTick = 0;
+
+      function animateWheel(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentWheelAngle = targetAngle * easeOut;
+
+        drawWheel(currentWheelAngle);
+
+        if (Math.floor(currentWheelAngle / 60) > lastTick) {
+          soundSynth.playTick();
+          lastTick = Math.floor(currentWheelAngle / 60);
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateWheel);
+        } else {
+          onSpinComplete(outcome);
+        }
+      }
+
+      requestAnimationFrame(animateWheel);
+    }
+
+    function onSpinComplete(outcome) {
+      isSpinning = false;
+      setButtonDisabled(false);
+
+      soundSynth.playWin();
+
+      // Confetti Celebration
+      confetti({
+        particleCount: 85,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: outcome === 0 ? ['#00f0ff', '#3b82f6', '#ffffff'] : ['#ff007f', '#a855f7', '#ffffff']
+      });
+
+      // Stats Calculation
+      gameStats.total++;
+      if (outcome === 0) gameStats.img1Count++;
+      else gameStats.img2Count++;
+
+      if (gameStats.lastWinner === outcome) {
+        gameStats.streak++;
+      } else {
+        gameStats.streak = 1;
+        gameStats.lastWinner = outcome;
+      }
+
+      // Display Winner Banner
+      const langDict = translations[currentLang];
+      const winnerTitle = outcome === 0 ? langDict.win1 : langDict.win2;
+      const winnerColor = outcome === 0 ? "from-cyan-300 to-blue-500" : "from-fuchsia-300 to-pink-500";
+
+      const resultCard = document.getElementById('resultCard');
+      const resultText = document.getElementById('resultText');
+      resultText.innerText = winnerTitle;
+      resultText.className = `font-orbitron text-lg sm:text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r ${winnerColor}`;
+      resultCard.classList.remove('opacity-0', 'scale-90');
+      resultCard.classList.add('opacity-100', 'scale-100');
+
+      updateUI(outcome);
+    }
+
+    function updateUI(lastOutcome) {
+      document.getElementById('totalFlips').innerText = gameStats.total;
+      document.getElementById('currentStreak').innerText = gameStats.streak;
+
+      const p1 = Math.round((gameStats.img1Count / gameStats.total) * 100) || 50;
+      const p2 = 100 - p1;
+
+      document.getElementById('statImg1Pct').innerText = `${p1}%`;
+      document.getElementById('statImg1Bar').style.width = `${p1}%`;
+
+      document.getElementById('statImg2Pct').innerText = `${p2}%`;
+      document.getElementById('statImg2Bar').style.width = `${p2}%`;
+
+      // Update Recent History
+      const historyList = document.getElementById('historyList');
+      const emptyHistory = document.getElementById('emptyHistory');
+      if (emptyHistory) emptyHistory.remove();
+
+      const item = document.createElement('div');
+      item.className = 'flex items-center justify-between p-2 rounded-xl bg-black/40 border border-gray-800 text-xs animate-pulse';
+      setTimeout(() => item.classList.remove('animate-pulse'), 400);
+
+      const langDict = translations[currentLang];
+      const isFirst = lastOutcome === 0;
+      const label = isFirst ? langDict.img1Label : langDict.img2Label;
+      const colorClass = isFirst ? "text-cyan-400" : "text-fuchsia-400";
+      const icon = isFirst ? "fa-circle-1" : "fa-circle-2";
+
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+
+      item.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="fa-solid ${icon} ${colorClass}"></i>
+          <span class="font-bold text-gray-200">${label}</span>
+        </div>
+        <span class="text-[10px] text-gray-500 font-mono">${timeStr}</span>
+      `;
+
+      historyList.prepend(item);
+      if (historyList.children.length > 15) {
+        historyList.removeChild(historyList.lastChild);
+      }
+    }
+
+    function setButtonDisabled(disabled) {
+      const btn = document.getElementById('spinBtn');
+      btn.disabled = disabled;
+      if (disabled) {
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    function setSpeedMode(mode) {
+      speedMode = mode;
+      const btnN = document.getElementById('modeNormal');
+      const btnS = document.getElementById('modeSuper');
+
+      if (mode === 'normal') {
+        btnN.className = 'py-1.5 text-xs rounded-xl border border-cyan-400/50 bg-cyan-500/20 font-semibold text-cyan-300 transition';
+        btnS.className = 'py-1.5 text-xs rounded-xl border border-gray-700 bg-black/20 text-gray-400 font-semibold transition hover:border-fuchsia-500/50';
+      } else {
+        btnS.className = 'py-1.5 text-xs rounded-xl border border-fuchsia-400/50 bg-fuchsia-500/20 font-semibold text-fuchsia-300 transition';
+        btnN.className = 'py-1.5 text-xs rounded-xl border border-gray-700 bg-black/20 text-gray-400 font-semibold transition hover:border-cyan-500/50';
+      }
+    }
+
+    function toggleSound() {
+      soundSynth.muted = !soundSynth.muted;
+      const icon = document.getElementById('soundIcon');
+      if (soundSynth.muted) {
+        icon.className = 'fa-solid fa-volume-xmark text-rose-500';
+      } else {
+        icon.className = 'fa-solid fa-volume-high text-cyan-400';
+        soundSynth.playTick();
+      }
+    }
+
+    function toggleBGM() {
+      const active = soundSynth.toggleBGM();
+      const icon = document.getElementById('bgmIcon');
+      const btn = document.getElementById('bgmToggle');
+      if (active) {
+        icon.className = 'fa-solid fa-music text-purple-400 animate-bounce';
+        btn.classList.add('border-purple-500', 'bg-purple-500/20');
+      } else {
+        icon.className = 'fa-solid fa-music text-gray-400';
+        btn.classList.remove('border-purple-500', 'bg-purple-500/20');
+      }
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'TR' ? 'EN' : 'TR';
+      document.getElementById('langText').innerText = currentLang;
+
+      // Update Data Attribute Elements
+      document.querySelectorAll('[data-tr]').forEach(el => {
+        const text = currentLang === 'TR' ? el.getAttribute('data-tr') : el.getAttribute('data-en');
+        if (text) el.innerHTML = text;
+      });
+    }
+
+    function resetStats() {
+      gameStats = { img1Count: 0, img2Count: 0, total: 0, streak: 0, lastWinner: null };
+      document.getElementById('totalFlips').innerText = '0';
+      document.getElementById('currentStreak').innerText = '0';
+      document.getElementById('statImg1Pct').innerText = '50%';
+      document.getElementById('statImg1Bar').style.width = '50%';
+      document.getElementById('statImg2Pct').innerText = '50%';
+      document.getElementById('statImg2Bar').style.width = '50%';
+
+      const resultCard = document.getElementById('resultCard');
+      resultCard.classList.add('opacity-0', 'scale-90');
+
+      const historyList = document.getElementById('historyList');
+      const langDict = translations[currentLang];
+      historyList.innerHTML = `
+        <div id="emptyHistory" class="text-xs text-gray-500 text-center py-10 italic">
+          ${langDict.emptyHist}
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
